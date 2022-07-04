@@ -59,48 +59,52 @@ const createCollege = async function (req, res) {
 };
 
 const collegeDetails = async function (req, res) {
-    let queryData = req.query;
-    //------------------------------[checking whether the required input is given or not]-------------------------------
+    try{
+        let queryData = req.query;
+        //------------------------------[checking whether the required input is given or not]-------------------------------
 
-    if (Object.keys(queryData).length == 0) {
-        return res.status(400).send({status: false, message: "Please include some request in filter"});
-    }
-
-    let collegeName = req.query.collegeName;
-
-    if (Object.keys(queryData).length > 1) {
-        return res.status(400).send({status: false, message: "Please include college name key only"});
-    }
-    if (!collegeName) {
-        return res.status(400).send({status: false, message: "Please provide college name Key 🔴"});
-    }
-    if (collegeName.trim().length == 0) {
-        {
-            return res.status(400).send({status: false, message: "collegeName can't be empty space"});
+        if (Object.keys(queryData).length == 0) {
+            return res.status(400).send({status: false, message: "Please include some request in filter"});
         }
+
+        let collegeName = req.query.collegeName;
+
+        if (Object.keys(queryData).length > 1) {
+            return res.status(400).send({status: false, message: "Please include college name key only"});
+        }
+        if (!collegeName) {
+            return res.status(400).send({status: false, message: "Please provide college name Key 🔴"});
+        }
+        if (collegeName.trim().length == 0) {
+            {
+                return res.status(400).send({status: false, message: "collegeName can't be empty space"});
+            }
+        }
+
+        //---------------------------[finding the college document with the college name]---------------------------------
+
+        let collegeDetails = await collegeModel.findOne({ name: collegeName });
+
+        if (!collegeDetails) {
+            return res.status(400).send({ status: false, msg: "College is not listed" });
+        }
+        //-----------------------------finding the intern document with the college document id]-----------------------------------------
+
+        let internDetails = await internModel.find({ collegeId: collegeDetails._id }).select({ name: 1, email: 1, mobile: 1, _id: 1 });
+        if (internDetails.length == 0) {
+            return res.status(400).send({status: false, msg: "No intern has applied for this college"});
+        }
+
+        let result = {
+            name: collegeDetails.name,
+            fullName: collegeDetails.fullName,
+            logoLink: collegeDetails.logoLink,
+            interns: internDetails,
+        };
+        res.status(200).send({ status: true, data: result });
+    } catch (err) {
+        res.status(500).send({ status: false, msg: err.message });
     }
-
-    //---------------------------[finding the college document with the college name]---------------------------------
-
-    let collegeDetails = await collegeModel.findOne({ name: collegeName });
-
-    if (!collegeDetails) {
-        return res.status(400).send({ status: false, msg: "College is not listed" });
-    }
-    //-----------------------------finding the intern document with the college document id]-----------------------------------------
-
-    let internDetails = await internModel.find({ collegeId: collegeDetails._id }).select({ name: 1, email: 1, mobile: 1, _id: 1 });
-    if (internDetails.length == 0) {
-        return res.status(400).send({status: false, msg: "No intern has applied for this college"});
-    }
-
-    let result = {
-        name: collegeDetails.name,
-        fullName: collegeDetails.fullName,
-        logoLink: collegeDetails.logoLink,
-        interns: internDetails,
-    };
-    res.status(200).send({ status: true, data: result });
 };
 
 module.exports = { createCollege, collegeDetails };
